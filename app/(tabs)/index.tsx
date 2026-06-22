@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,22 +7,39 @@ import {
   StyleSheet,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
+import { supabase } from '../../lib/supabase';
+
+type Task = {
+  id: number;
+  title: string;
+  completed: boolean;
+  created_at?: string;
+};
 
 export default function HomeScreen() {
   const [task, setTask] = useState('');
+  const [tasks, setTasks] = useState<Task[]>([]);
 
-  const [tasks, setTasks] = useState([
-    {
-      id: '1',
-      title: 'Buy Milk',
-      completed: false,
-    },
-    {
-      id: '2',
-      title: 'Finish Assignment',
-      completed: false,
-    },
-  ]);
+  async function loadTasks() {
+    const { data, error } = await supabase
+      .from('tasks')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.log(
+        'Error loading tasks:',
+        error.message
+      );
+      return;
+    }
+
+    setTasks(data || []);
+  }
+
+  useEffect(() => {
+    loadTasks();
+  }, []);
 
   function handleAddTask() {
     if (task.trim() === '') return;
@@ -30,7 +47,7 @@ export default function HomeScreen() {
     setTasks([
       ...tasks,
       {
-        id: Date.now().toString(),
+        id: Date.now(),
         title: task,
         completed: false,
       },
@@ -42,7 +59,9 @@ export default function HomeScreen() {
   return (
     <View style={styles.container}>
       <View style={headerStyles.header}>
-        <Text style={headerStyles.title}>TaskFlow</Text>
+        <Text style={headerStyles.title}>
+          TaskFlow
+        </Text>
       </View>
 
       <View style={styles.inputRow}>
