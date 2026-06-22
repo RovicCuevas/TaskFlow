@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,36 @@ import {
 import { MaterialIcons } from '@expo/vector-icons';
 
 export default function HomeScreen() {
+  const [task, setTask] = useState('');
+
+  const [tasks, setTasks] = useState([
+    {
+      id: '1',
+      title: 'Buy Milk',
+      completed: false,
+    },
+    {
+      id: '2',
+      title: 'Finish Assignment',
+      completed: false,
+    },
+  ]);
+
+  function handleAddTask() {
+    if (task.trim() === '') return;
+
+    setTasks([
+      ...tasks,
+      {
+        id: Date.now().toString(),
+        title: task,
+        completed: false,
+      },
+    ]);
+
+    setTask('');
+  }
+
   return (
     <View style={styles.container}>
       <View style={headerStyles.header}>
@@ -19,9 +49,14 @@ export default function HomeScreen() {
         <TextInput
           style={styles.input}
           placeholder="Enter Task"
+          value={task}
+          onChangeText={setTask}
         />
 
-        <TouchableOpacity style={styles.addButton}>
+        <TouchableOpacity
+          style={styles.addButton}
+          onPress={handleAddTask}
+        >
           <MaterialIcons
             name="add"
             size={22}
@@ -30,27 +65,30 @@ export default function HomeScreen() {
         </TouchableOpacity>
       </View>
 
-      <View style={styles.taskRow}>
-        <MaterialIcons
-          name="check-box-outline-blank"
-          size={20}
-          color="#5A6472"
-        />
-        <Text style={styles.taskText}>
-          Study React Native
-        </Text>
-      </View>
+      {tasks.map((item) => (
+        <View
+          key={item.id}
+          style={styles.taskRow}
+        >
+          <MaterialIcons
+            name={
+              item.completed
+                ? 'check-box'
+                : 'check-box-outline-blank'
+            }
+            size={20}
+            color={
+              item.completed
+                ? '#2E5BBA'
+                : '#5A6472'
+            }
+          />
 
-      <View style={styles.taskRow}>
-        <MaterialIcons
-          name="check-box-outline-blank"
-          size={20}
-          color="#5A6472"
-        />
-        <Text style={styles.taskText}>
-          Finish Assignment
-        </Text>
-      </View>
+          <Text style={styles.taskText}>
+            {item.title}
+          </Text>
+        </View>
+      ))}
     </View>
   );
 }
