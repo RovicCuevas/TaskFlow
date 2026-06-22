@@ -7,6 +7,7 @@ import {
   StyleSheet,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
+import Toast from 'react-native-toast-message';
 import { supabase } from '../../lib/supabase';
 
 type Task = {
@@ -37,78 +38,147 @@ export default function HomeScreen() {
     setTasks(data || []);
   }
 
+  async function addTask() {
+    if (task.trim() === '') return;
+
+    const taskTitle = task;
+
+    const { error } = await supabase
+      .from('tasks')
+      .insert([
+        {
+          title: taskTitle,
+          completed: false,
+        },
+      ]);
+
+    if (error) {
+      console.log(
+        'Error adding task:',
+        error.message
+      );
+      return;
+    }
+
+    setTask('');
+
+    Toast.show({
+      type: 'success',
+      text1: 'Task Added',
+      text2: `"${taskTitle}" has been added.`,
+    });
+
+    loadTasks();
+  }
+
+  async function toggleTask(item: Task) {
+    const { error } = await supabase
+      .from('tasks')
+      .update({
+        completed: !item.completed,
+      })
+      .eq('id', item.id);
+
+    if (error) {
+      console.log(
+        'Error updating task:',
+        error.message
+      );
+      return;
+    }
+
+    loadTasks();
+  }
+
+  async function deleteTask(id: number) {
+    const { error } = await supabase
+      .from('tasks')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.log(
+        'Error deleting task:',
+        error.message
+      );
+      return;
+    }
+
+    Toast.show({
+      type: 'error',
+      text1: 'Task Deleted',
+      text2: 'Task removed successfully.',
+    });
+
+    loadTasks();
+  }
+
   useEffect(() => {
     loadTasks();
   }, []);
 
-  function handleAddTask() {
-    if (task.trim() === '') return;
-
-    setTasks([
-      ...tasks,
-      {
-        id: Date.now(),
-        title: task,
-        completed: false,
-      },
-    ]);
-
-    setTask('');
-  }
-
   return (
-    <View style={styles.container}>
-      <View style={headerStyles.header}>
-        <Text style={headerStyles.title}>
-          TaskFlow
-        </Text>
-      </View>
-
-      <View style={styles.inputRow}>
-        <TextInput
-          style={styles.input}
-          placeholder="Enter Task"
-          value={task}
-          onChangeText={setTask}
-        />
-
-        <TouchableOpacity
-          style={styles.addButton}
-          onPress={handleAddTask}
-        >
-          <MaterialIcons
-            name="add"
-            size={22}
-            color="#fff"
-          />
-        </TouchableOpacity>
-      </View>
-
-      {tasks.map((item) => (
-        <View
-          key={item.id}
-          style={styles.taskRow}
-        >
-          <MaterialIcons
-            name={
-              item.completed
-                ? 'check-box'
-                : 'check-box-outline-blank'
-            }
-            size={20}
-            color={
-              item.completed
-                ? '#2E5BBA'
-                : '#5A6472'
-            }
-          />
-
-          <Text style={styles.taskText}>
-            {item.title}
+    <>
+      <View style={styles.container}>
+        <View style={headerStyles.header}>
+          <Text style={headerStyles.title}>
+            TaskFlow
           </Text>
         </View>
-      ))}
-    </View>
+
+        <View style={styles.inputRow}>
+          <TextInput
+            style={styles.input}
+            placeholder="Enter Task"
+            value={task}
+            onChangeText={setTask}
+          />
+
+          <TouchableOpacity
+            style={styles.addButton}
+            onPress={addTask}
+          >
+            <MaterialIcons
+              name="add"
+              size={22}
+              color="#fff"
+            />
+          </TouchableOpacity>
+        </View>
+
+        {tasks.map((item) => (
+          <TouchableOpacity
+            key={item.id}
+            onPress={() => toggleTask(item)}
+            onLongPress={() =>
+              deleteTask(item.id)
+            }
+          >
+            <View style={styles.taskRow}>
+              <MaterialIcons
+                name={
+                  item.completed
+                    ? 'check-box'
+                    : 'check-box-outline-blank'
+                }
+                size={20}
+                color={
+                  item.completed
+                    ? '#2E5BBA'
+                    : '#5A6472'
+                }
+              />
+
+              <Text style={styles.taskText}>
+                {item.title}
+              </Text>
+            </View>
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      <Toast />
+    </>
   );
 }
 
